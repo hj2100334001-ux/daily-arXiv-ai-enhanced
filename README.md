@@ -68,6 +68,9 @@ Otherwise, you can watch the video above first and directly use this repo in htt
   8. `START_DATE` / `END_DATE` (optional): crawl submitted papers in a date range, using `YYYY-MM-DD`; if unset, the workflow scans yesterday through today in UTC
   9. `MAX_PAPERS` (optional): maximum papers kept per run; default is `20`
   10. `SEARCH_POOL_SIZE` (optional): how many latest papers to scan before filtering; default is at least `100`
+  11. `AI_PROVIDER` (optional): `trapi` by default; set `openai` only for OpenAI-compatible providers
+  12. `TRAPI_MODEL` (optional): TRAPI deployment name, default `gpt-5.4-mini_2026-03-17`
+  13. `TRAPI_APIPATH` / `TRAPI_ENDPOINT` / `TRAPI_SCOPE` (optional): TRAPI routing settings
 8. Go to your-own-repo -> Actions -> arXiv-daily-ai-enhanced
 9. You can manually click **Run workflow** to test if it works well (it may take about one hour). By default, this action will automatically run every day. You can modify it in `.github/workflows/run.yml`
 10. Set up GitHub pages: Go to your own repo -> Settings -> Pages. In `Build and deployment`, set `Source="Deploy from a branch"`, `Branch="main", "/(root)"`. Wait for a few minutes, go to https://\<username\>.github.io/daily-arXiv-ai-enhanced/. Please see this [issue](https://github.com/dw-dengwei/daily-arXiv-ai-enhanced/issues/14) for more precise instructions.

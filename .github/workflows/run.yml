@@ -41,9 +41,15 @@ jobs:
         export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
         export OPENAI_BASE_URL=${{ secrets.OPENAI_BASE_URL }}
         export TOKEN_GITHUB=${{ secrets.TOKEN_GITHUB }}
+        export TRAPI_API_KEY=${{ secrets.TRAPI_API_KEY }}
         export LANGUAGE="${{ vars.LANGUAGE }}"
         export CATEGORIES="${{ vars.CATEGORIES }}"
         export MODEL_NAME="${{ vars.MODEL_NAME }}"
+        export AI_PROVIDER="${{ vars.AI_PROVIDER }}"
+        export TRAPI_MODEL="${{ vars.TRAPI_MODEL }}"
+        export TRAPI_APIPATH="${{ vars.TRAPI_APIPATH }}"
+        export TRAPI_ENDPOINT="${{ vars.TRAPI_ENDPOINT }}"
+        export TRAPI_SCOPE="${{ vars.TRAPI_SCOPE }}"
         export START_DATE="${{ vars.START_DATE }}"
         export END_DATE="${{ vars.END_DATE }}"
         export KEYWORDS="${{ vars.KEYWORDS }}"
@@ -113,8 +119,14 @@ jobs:
         cd ai
         export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
         export OPENAI_BASE_URL=${{ secrets.OPENAI_BASE_URL }}
+        export TRAPI_API_KEY=${{ secrets.TRAPI_API_KEY }}
         export LANGUAGE="${{ vars.LANGUAGE }}"
         export MODEL_NAME="${{ vars.MODEL_NAME }}"
+        export AI_PROVIDER="${{ vars.AI_PROVIDER }}"
+        export TRAPI_MODEL="${{ vars.TRAPI_MODEL }}"
+        export TRAPI_APIPATH="${{ vars.TRAPI_APIPATH }}"
+        export TRAPI_ENDPOINT="${{ vars.TRAPI_ENDPOINT }}"
+        export TRAPI_SCOPE="${{ vars.TRAPI_SCOPE }}"
         
         python enhance.py --data ../data/${today}.jsonl
         

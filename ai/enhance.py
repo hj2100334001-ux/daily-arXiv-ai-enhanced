@@ -15,6 +15,7 @@ from tqdm import tqdm
 
 import langchain_core.exceptions
 from langchain_openai import ChatOpenAI
+from openai import OpenAI
 from langchain.prompts import (
     ChatPromptTemplate,
     SystemMessagePromptTemplate,
@@ -24,8 +25,12 @@ from structure import Structure
 
 if os.path.exists('.env'):
     dotenv.load_dotenv()
-template = open("template.txt", "r").read()
-system = open("system.txt", "r").read()
+with open("template.txt", "r", encoding="utf-8") as template_file:
+    template = template_file.read()
+with open("system.txt", "r", encoding="utf-8") as system_file:
+    system = system_file.read()
+
+AI_FIELDS = ["tldr", "motivation", "method", "result", "conclusion"]
 
 def parse_args():
     """解析命令行参数"""
@@ -34,7 +39,107 @@ def parse_args():
     parser.add_argument("--max_workers", type=int, default=1, help="Maximum number of parallel workers")
     return parser.parse_args()
 
-def process_single_item(chain, item: Dict, language: str) -> Dict:
+def default_ai_fields():
+    return {
+        "tldr": "摘要生成失败",
+        "motivation": "动机分析不可用",
+        "method": "方法提取失败",
+        "result": "结果分析不可用",
+        "conclusion": "结论提取失败"
+    }
+
+def parse_ai_json_response(content: str) -> Dict:
+    text = content.strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text)
+        text = re.sub(r"\s*```$", "", text).strip()
+
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", text, flags=re.DOTALL)
+        if not match:
+            raise
+        data = json.loads(match.group(0))
+
+    defaults = default_ai_fields()
+    return {field: str(data.get(field) or defaults[field]) for field in AI_FIELDS}
+
+class TrapiEnhancer:
+    def __init__(self, model_name: str):
+        self.model_name = model_name
+        self.timeout = int(os.environ.get("TRAPI_TIMEOUT") or "600")
+        apipath = os.environ.get("TRAPI_APIPATH", "gcr/shared")
+        endpoint = os.environ.get("TRAPI_ENDPOINT", f"https://trapi.research.microsoft.com/{apipath}/openai/v1")
+        api_key = os.environ.get("TRAPI_API_KEY") or os.environ.get("AZURE_OPENAI_API_KEY")
+
+        if not api_key and os.environ.get("TRAPI_USE_OPENAI_API_KEY", "false").lower() in {"1", "true", "yes"}:
+            api_key = os.environ.get("OPENAI_API_KEY")
+
+        if not api_key:
+            from azure.identity import (
+                AzureCliCredential,
+                ChainedTokenCredential,
+                ManagedIdentityCredential,
+                get_bearer_token_provider,
+            )
+
+            scope = os.environ.get("TRAPI_SCOPE", "api://trapi/.default")
+            credential = get_bearer_token_provider(
+                ChainedTokenCredential(
+                    AzureCliCredential(),
+                    ManagedIdentityCredential(),
+                ),
+                scope,
+            )
+            api_key = credential()
+
+        self.client = OpenAI(base_url=endpoint, api_key=api_key)
+
+    def __call__(self, content: str, language: str) -> Dict:
+        user_prompt = template.format(content=content)
+        json_instruction = (
+            "请只输出一个合法 JSON 对象，不要 Markdown，不要额外解释。"
+            "JSON 必须包含 tldr、motivation、method、result、conclusion 五个键。"
+            f"所有字段必须使用{language}，如果 language 是 Chinese，请使用简体中文。"
+        )
+        response = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=[
+                {"role": "system", "content": f"{system}\n{json_instruction}"},
+                {"role": "user", "content": user_prompt},
+            ],
+            timeout=self.timeout,
+        )
+        return parse_ai_json_response(response.choices[0].message.content or "")
+
+class LangChainEnhancer:
+    def __init__(self, model_name: str):
+        llm = ChatOpenAI(
+            model=model_name,
+            model_kwargs={"extra_body": {"thinking": {"type": "disabled"}}}
+        ).with_structured_output(Structure, method="function_calling")
+        prompt_template = ChatPromptTemplate.from_messages([
+            SystemMessagePromptTemplate.from_template(system),
+            HumanMessagePromptTemplate.from_template(template=template)
+        ])
+        self.chain = prompt_template | llm
+
+    def __call__(self, content: str, language: str) -> Dict:
+        response: Structure = self.chain.invoke({
+            "language": language,
+            "content": content,
+        })
+        return response.model_dump()
+
+def build_enhancer(provider: str, model_name: str):
+    if provider == "openai":
+        return LangChainEnhancer(model_name)
+    if provider != "trapi":
+        raise ValueError(f"Unsupported AI_PROVIDER: {provider}")
+    return TrapiEnhancer(model_name)
+
+def process_single_item(enhancer, item: Dict, language: str) -> Dict:
     def is_sensitive(content: str) -> bool:
         """
         调用 spam.dw-dengwei.workers.dev 接口检测内容是否包含敏感词。
@@ -118,21 +223,10 @@ def process_single_item(chain, item: Dict, language: str) -> Dict:
         item.update(code_info)
 
     """处理单个数据项"""
-    # Default structure with meaningful fallback values
-    default_ai_fields = {
-        "tldr": "Summary generation failed",
-        "motivation": "Motivation analysis unavailable",
-        "method": "Method extraction failed",
-        "result": "Result analysis unavailable",
-        "conclusion": "Conclusion extraction failed"
-    }
+    defaults = default_ai_fields()
     
     try:
-        response: Structure = chain.invoke({
-            "language": language,
-            "content": item['summary']
-        })
-        item['AI'] = response.model_dump()
+        item['AI'] = {**defaults, **enhancer(item['summary'], language)}
     except langchain_core.exceptions.OutputParserException as e:
         # 尝试从错误信息中提取 JSON 字符串并修复
         error_msg = str(e)
@@ -150,17 +244,17 @@ def process_single_item(chain, item: Dict, language: str) -> Dict:
                 print(f"Failed to parse JSON for {item.get('id', 'unknown')}: {json_e}", file=sys.stderr)
         
         # Merge partial data with defaults to ensure all fields exist
-        item['AI'] = {**default_ai_fields, **partial_data}
+        item['AI'] = {**defaults, **partial_data}
         print(f"Using partial AI data for {item.get('id', 'unknown')}: {list(partial_data.keys())}", file=sys.stderr)
     except Exception as e:
         # Catch any other exceptions and provide default values
         print(f"Unexpected error for {item.get('id', 'unknown')}: {e}", file=sys.stderr)
-        item['AI'] = default_ai_fields
+        item['AI'] = defaults
     
     # Final validation to ensure all required fields exist
-    for field in default_ai_fields.keys():
+    for field in defaults.keys():
         if field not in item['AI']:
-            item['AI'][field] = default_ai_fields[field]
+            item['AI'][field] = defaults[field]
 
     # 检查 AI 生成的所有字段
     for v in item.get("AI", {}).values():
@@ -168,28 +262,17 @@ def process_single_item(chain, item: Dict, language: str) -> Dict:
             return None
     return item
 
-def process_all_items(data: List[Dict], model_name: str, language: str, max_workers: int) -> List[Dict]:
+def process_all_items(data: List[Dict], provider: str, model_name: str, language: str, max_workers: int) -> List[Dict]:
     """并行处理所有数据项"""
-    llm = ChatOpenAI(
-            model=model_name,
-            model_kwargs={"extra_body": {"thinking": {"type": "disabled"}}}
-        ).with_structured_output(Structure, method="function_calling")
-
-    print('Connect to:', model_name, file=sys.stderr)
-    
-    prompt_template = ChatPromptTemplate.from_messages([
-        SystemMessagePromptTemplate.from_template(system),
-        HumanMessagePromptTemplate.from_template(template=template)
-    ])
-
-    chain = prompt_template | llm
+    enhancer = build_enhancer(provider, model_name)
+    print('Connect to:', f"{provider}/{model_name}", file=sys.stderr)
     
     # 使用线程池并行处理
     processed_data = [None] * len(data)  # 预分配结果列表
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # 提交所有任务
         future_to_idx = {
-            executor.submit(process_single_item, chain, item, language): idx
+            executor.submit(process_single_item, enhancer, item, language): idx
             for idx, item in enumerate(data)
         }
         
@@ -219,8 +302,12 @@ def process_all_items(data: List[Dict], model_name: str, language: str, max_work
 
 def main():
     args = parse_args()
-    model_name = os.environ.get("MODEL_NAME", 'deepseek-chat')
-    language = os.environ.get("LANGUAGE", 'Chinese')
+    provider = (os.environ.get("AI_PROVIDER") or "trapi").strip().lower()
+    if provider == "openai":
+        model_name = os.environ.get("MODEL_NAME") or 'deepseek-chat'
+    else:
+        model_name = os.environ.get("TRAPI_MODEL") or 'gpt-5.4-mini_2026-03-17'
+    language = os.environ.get("LANGUAGE") or 'Chinese'
 
     # 检查并删除目标文件
     target_file = args.data.replace('.jsonl', f'_AI_enhanced_{language}.jsonl')
@@ -248,6 +335,7 @@ def main():
     # 并行处理所有数据
     processed_data = process_all_items(
         data,
+        provider,
         model_name,
         language,
         args.max_workers
