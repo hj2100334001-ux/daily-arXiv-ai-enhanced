@@ -1,7 +1,7 @@
 import arxiv
 import os
 import scrapy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from daily_arxiv.filters import (
     build_submitted_date_query,
@@ -18,9 +18,11 @@ class ArxivSpider(scrapy.Spider):
         categories = parse_csv(os.environ.get("CATEGORIES", "")) or ["cs.CV"]
         # 保存目标分类列表，用于后续验证
         self.target_categories = set(categories)
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        self.start_date = os.environ.get("START_DATE") or today
-        self.end_date = os.environ.get("END_DATE") or self.start_date
+        today = datetime.now(timezone.utc)
+        default_start_date = (today - timedelta(days=1)).strftime("%Y-%m-%d")
+        default_end_date = today.strftime("%Y-%m-%d")
+        self.start_date = os.environ.get("START_DATE") or default_start_date
+        self.end_date = os.environ.get("END_DATE") or default_end_date
         self.keywords = parse_csv(os.environ.get("KEYWORDS", ""))
         self.keyword_mode = os.environ.get("KEYWORD_MODE", "any").strip().lower()
         self.max_papers = parse_positive_int(os.environ.get("MAX_PAPERS"), default=20)

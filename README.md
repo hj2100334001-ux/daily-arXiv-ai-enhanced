@@ -65,7 +65,7 @@ Otherwise, you can watch the video above first and directly use this repo in htt
    5. `NAME`: your name for push to GitHub
   6. `KEYWORDS` (optional): title keywords separated with commas, such as "gui agent, grounding"
   7. `KEYWORD_MODE` (optional): `any` or `all`; default is `any`
-  8. `START_DATE` / `END_DATE` (optional): crawl submitted papers in a date range, using `YYYY-MM-DD`
+  8. `START_DATE` / `END_DATE` (optional): crawl submitted papers in a date range, using `YYYY-MM-DD`; if unset, the workflow scans yesterday through today in UTC
   9. `MAX_PAPERS` (optional): maximum papers kept per run; default is `20`
   10. `SEARCH_POOL_SIZE` (optional): how many latest papers to scan before filtering; default is at least `100`
 8. Go to your-own-repo -> Actions -> arXiv-daily-ai-enhanced
