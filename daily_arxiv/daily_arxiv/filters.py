@@ -38,5 +38,23 @@ def build_submitted_date_query(categories, start_date, end_date):
     return f"({category_query}) AND submittedDate:[{start} TO {end}]"
 
 
+def build_title_keyword_query(keywords, mode="any"):
+    keyword_queries = []
+    for keyword in keywords:
+        terms = [term for term in keyword.replace('-', ' ').split() if term]
+        if not terms:
+            continue
+        if len(terms) == 1:
+            keyword_queries.append(f"ti:{terms[0]}")
+        else:
+            keyword_queries.append("(" + " AND ".join(f"ti:{term}" for term in terms) + ")")
+
+    if not keyword_queries:
+        return ""
+
+    operator = " AND " if mode == "all" else " OR "
+    return "(" + operator.join(keyword_queries) + ")"
+
+
 def strip_arxiv_version(arxiv_id):
     return arxiv_id.rsplit("/", 1)[-1].split("v")[0]

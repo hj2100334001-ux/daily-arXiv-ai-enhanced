@@ -8,6 +8,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "daily_arxiv"))
 
 from daily_arxiv.filters import (  # noqa: E402
     build_submitted_date_query,
+    build_title_keyword_query,
     matches_title_keywords,
     parse_csv,
     parse_positive_int,
@@ -33,6 +34,22 @@ class CrawlFilterTests(unittest.TestCase):
         self.assertEqual(
             query,
             "(cat:cs.CV OR cat:cs.CL) AND submittedDate:[202607010000 TO 202607082359]",
+        )
+
+    def test_build_title_keyword_query_uses_title_terms(self):
+        keywords = parse_csv("gui agent, grounding")
+
+        self.assertEqual(
+            build_title_keyword_query(keywords, "any"),
+            "((ti:gui AND ti:agent) OR ti:grounding)",
+        )
+
+    def test_build_title_keyword_query_supports_all_mode(self):
+        keywords = parse_csv("gui agent, grounding")
+
+        self.assertEqual(
+            build_title_keyword_query(keywords, "all"),
+            "((ti:gui AND ti:agent) AND ti:grounding)",
         )
 
     def test_parse_positive_int_uses_default_for_empty_or_invalid_values(self):

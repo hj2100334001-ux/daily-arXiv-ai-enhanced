@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 from daily_arxiv.filters import (
     build_submitted_date_query,
+    build_title_keyword_query,
     matches_title_keywords,
     parse_csv,
     parse_positive_int,
@@ -42,6 +43,9 @@ class ArxivSpider(scrapy.Spider):
             self.start_date,
             self.end_date,
         )
+        title_query = build_title_keyword_query(self.keywords, self.keyword_mode)
+        if title_query:
+            query = f"{query} AND {title_query}"
         self.logger.info(
             "Searching arXiv query=%s max_papers=%s keywords=%s mode=%s",
             query,
