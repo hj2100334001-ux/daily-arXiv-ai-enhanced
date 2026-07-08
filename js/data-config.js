@@ -7,18 +7,44 @@
  * to enable fetching data from the data branch
  */
 
+const INJECTED_REPO_OWNER = 'PLACEHOLDER_REPO_OWNER';
+const INJECTED_REPO_NAME = 'PLACEHOLDER_REPO_NAME';
+
+function getInjectedValue(value, fallback) {
+    return value && !value.startsWith('PLACEHOLDER_') ? value : fallback;
+}
+
+function detectGitHubPagesRepository() {
+    if (typeof window === 'undefined' || !window.location) {
+        return {};
+    }
+
+    const hostname = window.location.hostname;
+    if (!hostname.endsWith('.github.io')) {
+        return {};
+    }
+
+    const repoOwner = hostname.replace(/\.github\.io$/, '');
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    const repoName = pathParts[0] || `${repoOwner}.github.io`;
+
+    return { repoOwner, repoName };
+}
+
+const detectedRepository = detectGitHubPagesRepository();
+
 const DATA_CONFIG = {
     /**
      * GitHub repository owner (username)
      * This will be replaced during GitHub Actions workflow execution
      */
-    repoOwner: 'dw-dengwei',
+    repoOwner: detectedRepository.repoOwner || getInjectedValue(INJECTED_REPO_OWNER, 'dw-dengwei'),
 
     /**
      * GitHub repository name
      * This will be replaced during GitHub Actions workflow execution
      */
-    repoName: 'daily-arXiv-ai-enhanced',
+    repoName: detectedRepository.repoName || getInjectedValue(INJECTED_REPO_NAME, 'daily-arXiv-ai-enhanced'),
 
     /**
      * Data branch name
