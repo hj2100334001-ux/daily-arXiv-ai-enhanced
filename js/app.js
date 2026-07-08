@@ -393,7 +393,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function fetchGitHubStats() {
   try {
-    const response = await fetch('https://api.github.com/repos/dw-dengwei/daily-arXiv-ai-enhanced');
+    const repoOwner = typeof DATA_CONFIG !== 'undefined' ? DATA_CONFIG.repoOwner : 'hj2100334001-ux';
+    const repoName = typeof DATA_CONFIG !== 'undefined' ? DATA_CONFIG.repoName : 'daily-arXiv-ai-enhanced';
+    const response = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}`);
     const data = await response.json();
     const starCount = data.stargazers_count;
     const forkCount = data.forks_count;
