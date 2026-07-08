@@ -303,6 +303,9 @@ function initEventListeners() {
   // 重置设置按钮
   const resetSettingsButton = document.getElementById('resetSettings');
   resetSettingsButton.addEventListener('click', resetSettings);
+
+  const restoreHiddenPapersButton = document.getElementById('restoreHiddenPapers');
+  restoreHiddenPapersButton.addEventListener('click', restoreHiddenPapers);
 }
 
 // 复制关键词到剪切板
@@ -417,6 +420,11 @@ function resetSettings() {
   
   // 显示重置成功提示
   showNotification('Settings reset to default!', 'info');
+}
+
+function restoreHiddenPapers() {
+  localStorage.removeItem('hiddenPapers');
+  showNotification('Hidden papers restored!', 'success');
 }
 
 // 显示通知
