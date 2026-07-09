@@ -1622,16 +1622,15 @@ function showPaperDetails(paper, paperIndex) {
   }
   // ---------------------------
 
-  // 通义千问：点击后打开 Qwen 对话页，复制“基于上传PDF提问”的问题，并打开 PDF 便于上传
+  // 通义千问：点击后打开 Qwen 对话页，复制“带论文链接的提问”，让 Qwen 自行阅读链接
   const qwenChatLink = document.getElementById('qwenChatLink');
   if (qwenChatLink) {
     const qwenPdfUrl = paper.url.replace('abs', 'pdf');
-    const qwenQuestion = `请阅读我上传的这篇论文PDF（标题：${paper.title}），然后用中文回答：1. 这篇文章解决了什么问题；2. 有哪些相关工作；3. 采用了什么研究方法；4. 做了哪些实验、结果如何；5. 结论是什么。最后整体总结这篇文章的核心内容。`;
+    const qwenQuestion = `请阅读这篇论文 ${qwenPdfUrl} ，然后用中文回答：1. 这篇文章解决了什么问题；2. 有哪些相关工作；3. 采用了什么研究方法；4. 做了哪些实验、结果如何；5. 结论是什么。最后整体总结这篇文章的核心内容。`;
     qwenChatLink.href = QWEN_CHAT_URL;
     qwenChatLink.onclick = function () {
       copyTextToClipboard(qwenQuestion);
-      window.open(qwenPdfUrl, '_blank', 'noopener');
-      showAppToast('已打开通义千问，问题已复制到剪贴板。请在新标签页保存该论文PDF并上传到通义千问，然后粘贴问题（Ctrl+V）后发送。');
+      showAppToast('已打开通义千问，问题（含论文链接）已复制到剪贴板。粘贴问题（Ctrl+V）后发送即可，无需上传PDF。');
     };
   }
   
