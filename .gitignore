@@ -17,3 +17,9 @@ package-lock.json
 yarn.lock
 .DS_Store
 package.json
+
+# 本地运行脚本产生的文件 / Local runner artifacts
+.env
+.data-branch/
+crawl_history.json
+data/_run_*

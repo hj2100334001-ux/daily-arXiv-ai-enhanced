@@ -4,9 +4,11 @@
 name: arXiv-daily-ai-enhanced
 
 on:
-  schedule:
-    # 每天北京时间 06:00（UTC 22:00）运行 / Runs daily at 06:00 Beijing time (22:00 UTC)
-    - cron: "0 22 * * *"
+  # 已改为本地运行（见 run_local.py / run_local.ps1），关闭每日定时任务。
+  # 如仍想让 GitHub 自动跑，取消下面 schedule 的注释即可。
+  # schedule:
+  #   # 每天北京时间 06:00（UTC 22:00）运行 / Runs daily at 06:00 Beijing time (22:00 UTC)
+  #   - cron: "0 22 * * *"
   workflow_dispatch:
 
 
