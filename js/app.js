@@ -23,8 +23,65 @@ const HIDDEN_PAPERS_STORAGE_KEY = 'hiddenPapers';
 const PAPER_RENDER_BATCH_SIZE = 60;
 let displayedPaperLimit = PAPER_RENDER_BATCH_SIZE;
 
+// 通义千问对话页地址
+const QWEN_CHAT_URL = 'https://www.qianwen.com/chat?ch=pcqwen%40sem_bing_brand_yjhdbingsempcqw1_2';
+
 function resetDisplayedPaperLimit() {
   displayedPaperLimit = PAPER_RENDER_BATCH_SIZE;
+}
+
+// 复制文本到剪贴板（带降级方案）
+function copyTextToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text).catch(() => fallbackCopyText(text));
+  }
+  return fallbackCopyText(text);
+}
+
+function fallbackCopyText(text) {
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  } catch (error) {
+    console.error('复制到剪贴板失败:', error);
+  }
+  return Promise.resolve();
+}
+
+// 轻量提示条
+function showAppToast(message, duration = 4500) {
+  let toast = document.getElementById('appToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'appToast';
+    toast.style.position = 'fixed';
+    toast.style.left = '50%';
+    toast.style.bottom = '32px';
+    toast.style.transform = 'translateX(-50%)';
+    toast.style.maxWidth = '90%';
+    toast.style.background = 'rgba(30, 30, 30, 0.92)';
+    toast.style.color = '#fff';
+    toast.style.padding = '12px 18px';
+    toast.style.borderRadius = '8px';
+    toast.style.fontSize = '14px';
+    toast.style.lineHeight = '1.5';
+    toast.style.zIndex = '10000';
+    toast.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.25)';
+    toast.style.transition = 'opacity 0.3s ease';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.opacity = '1';
+  clearTimeout(showAppToast._timer);
+  showAppToast._timer = setTimeout(() => {
+    toast.style.opacity = '0';
+  }, duration);
 }
 
 function getPaperKey(paper) {
@@ -1565,9 +1622,18 @@ function showPaperDetails(paper, paperIndex) {
   }
   // ---------------------------
 
-  // 提示词来自：https://papers.cool/
-  prompt = `请你阅读这篇文章${paper.url.replace('abs', 'pdf')},总结一下这篇文章解决的问题、相关工作、研究方法、做了什么实验及其结果、结论，最后整体总结一下这篇文章的内容`
-  document.getElementById('kimiChatLink').href = `https://www.kimi.com/_prefill_chat?prefill_prompt=${prompt}&system_prompt=你是一个学术助手，后面的对话将围绕着以下论文内容进行，已经通过链接给出了论文的PDF和论文已有的FAQ。用户将继续向你咨询论文的相关问题，请你作出专业的回答，不要出现第一人称，当涉及到分点回答时，鼓励你以markdown格式输出。&send_immediately=true&force_search=true`;
+  // 通义千问：点击后打开 Qwen 对话页，复制“基于上传PDF提问”的问题，并打开 PDF 便于上传
+  const qwenChatLink = document.getElementById('qwenChatLink');
+  if (qwenChatLink) {
+    const qwenPdfUrl = paper.url.replace('abs', 'pdf');
+    const qwenQuestion = `请阅读我上传的这篇论文PDF（标题：${paper.title}），然后用中文回答：1. 这篇文章解决了什么问题；2. 有哪些相关工作；3. 采用了什么研究方法；4. 做了哪些实验、结果如何；5. 结论是什么。最后整体总结这篇文章的核心内容。`;
+    qwenChatLink.href = QWEN_CHAT_URL;
+    qwenChatLink.onclick = function () {
+      copyTextToClipboard(qwenQuestion);
+      window.open(qwenPdfUrl, '_blank', 'noopener');
+      showAppToast('已打开通义千问，问题已复制到剪贴板。请在新标签页保存该论文PDF并上传到通义千问，然后粘贴问题（Ctrl+V）后发送。');
+    };
+  }
   
   // 更新论文位置信息
   const paperPosition = document.getElementById('paperPosition');
