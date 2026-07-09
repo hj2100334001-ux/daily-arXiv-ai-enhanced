@@ -16,6 +16,8 @@ Result: {result}
 
 Conclusion: {conclusion}
 
+Detailed Summary: {detailed_summary}
+
 Abstract: {summary}
 
 </details>

@@ -20,7 +20,8 @@ class ArxivSpider(scrapy.Spider):
         # 保存目标分类列表，用于后续验证
         self.target_categories = set(categories)
         today = datetime.now(timezone.utc)
-        default_start_date = (today - timedelta(days=1)).strftime("%Y-%m-%d")
+        # 默认只爬取当天（UTC）提交的论文 / By default only crawl papers submitted today (UTC)
+        default_start_date = today.strftime("%Y-%m-%d")
         default_end_date = today.strftime("%Y-%m-%d")
         self.start_date = os.environ.get("START_DATE") or default_start_date
         self.end_date = os.environ.get("END_DATE") or default_end_date

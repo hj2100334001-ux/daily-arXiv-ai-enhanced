@@ -30,7 +30,7 @@ with open("template.txt", "r", encoding="utf-8") as template_file:
 with open("system.txt", "r", encoding="utf-8") as system_file:
     system = system_file.read()
 
-AI_FIELDS = ["tldr", "motivation", "method", "result", "conclusion"]
+AI_FIELDS = ["tldr", "motivation", "method", "result", "conclusion", "detailed_summary"]
 
 def parse_args():
     """解析命令行参数"""
@@ -45,7 +45,8 @@ def default_ai_fields():
         "motivation": "动机分析不可用",
         "method": "方法提取失败",
         "result": "结果分析不可用",
-        "conclusion": "结论提取失败"
+        "conclusion": "结论提取失败",
+        "detailed_summary": "详细总结生成失败"
     }
 
 def parse_ai_json_response(content: str) -> Dict:
@@ -100,7 +101,9 @@ class TrapiEnhancer:
         user_prompt = template.format(content=content)
         json_instruction = (
             "请只输出一个合法 JSON 对象，不要 Markdown，不要额外解释。"
-            "JSON 必须包含 tldr、motivation、method、result、conclusion 五个键。"
+            "JSON 必须包含 tldr、motivation、method、result、conclusion、detailed_summary 六个键。"
+            "其中 detailed_summary 请尽量详细、分点回答：1. 这篇文章解决了什么问题；2. 有哪些相关工作；"
+            "3. 采用了什么研究方法；4. 做了哪些实验、结果如何；5. 结论是什么；最后再整体总结这篇文章的核心内容。"
             f"所有字段必须使用{language}，如果 language 是 Chinese，请使用简体中文。"
         )
         response = self.client.chat.completions.create(
@@ -295,7 +298,8 @@ def process_all_items(data: List[Dict], provider: str, model_name: str, language
                     "motivation": "Processing failed",
                     "method": "Processing failed",
                     "result": "Processing failed",
-                    "conclusion": "Processing failed"
+                    "conclusion": "Processing failed",
+                    "detailed_summary": "Processing failed"
                 }
     
     return processed_data

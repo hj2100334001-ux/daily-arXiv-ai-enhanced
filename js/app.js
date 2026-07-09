@@ -1040,6 +1040,7 @@ function parseJsonlData(jsonlText, date) {
         method: paper.AI && paper.AI.method ? paper.AI.method : '',
         result: paper.AI && paper.AI.result ? paper.AI.result : '',
         conclusion: paper.AI && paper.AI.conclusion ? paper.AI.conclusion : '',
+        detailed_summary: paper.AI && paper.AI.detailed_summary ? paper.AI.detailed_summary : '',
         code_url: paper.code_url || '',
         code_stars: paper.code_stars || 0,
         code_last_update: paper.code_last_update || ''
@@ -1559,6 +1560,7 @@ function showPaperDetails(paper, paperIndex) {
   const highlightedMethod = paper.method;
   const highlightedResult = paper.result;
   const highlightedConclusion = paper.conclusion;
+  const highlightedDetailedSummary = paper.detailed_summary;
   
   // 判断是否需要显示高亮说明
   const showHighlightLegend = activeKeywords.length > 0 || activeAuthors.length > 0;
@@ -1582,6 +1584,8 @@ function showPaperDetails(paper, paperIndex) {
         ${paper.result ? `<div class="paper-section"><h4>Result</h4><p>${highlightedResult}</p></div>` : ''}
         ${paper.conclusion ? `<div class="paper-section"><h4>Conclusion</h4><p>${highlightedConclusion}</p></div>` : ''}
       </div>
+      
+      ${paper.detailed_summary ? `<div class="paper-section detailed-summary-section"><h3>详细总结（AI）</h3><p style="white-space: pre-wrap;">${highlightedDetailedSummary}</p></div>` : ''}
       
       ${highlightedAbstract ? `<h3>Abstract</h3><p class="original-abstract">${highlightedAbstract}</p>` : ''}
       
