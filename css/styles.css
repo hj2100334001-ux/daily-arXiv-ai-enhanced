@@ -747,6 +747,30 @@ main {
   font-weight: 500;
 }
 
+.load-more-container {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 32px;
+}
+
+.load-more-button {
+  border: 1px solid var(--primary-color);
+  background: var(--card-bg-color);
+  color: var(--primary-color);
+  border-radius: var(--radius-sm);
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.load-more-button:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
 /* 论文卡片 - 列表视图 */
 .list-view .paper-card {
   flex-direction: row;

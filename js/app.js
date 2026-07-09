@@ -20,6 +20,12 @@ let previousActiveKeywords = null; // 文本搜索激活时，暂存之前的关
 let previousActiveAuthors = null; // 文本搜索激活时，暂存之前的作者激活集合
 let hiddenPaperIds = new Set(); // 本地隐藏的论文ID
 const HIDDEN_PAPERS_STORAGE_KEY = 'hiddenPapers';
+const PAPER_RENDER_BATCH_SIZE = 60;
+let displayedPaperLimit = PAPER_RENDER_BATCH_SIZE;
+
+function resetDisplayedPaperLimit() {
+  displayedPaperLimit = PAPER_RENDER_BATCH_SIZE;
+}
 
 function getPaperKey(paper) {
   return paper.id || paper.url || paper.title;
@@ -47,6 +53,11 @@ function hidePaper(paper) {
   hiddenPaperIds.add(getPaperKey(paper));
   saveHiddenPapers();
   renderCategoryFilter(getAllCategories(paperData));
+  renderPapers();
+}
+
+function loadMorePapers() {
+  displayedPaperLimit += PAPER_RENDER_BATCH_SIZE;
   renderPapers();
 }
 
@@ -204,6 +215,7 @@ function toggleKeywordFilter(keyword) {
   });
   
   // 重新渲染论文列表
+  resetDisplayedPaperLimit();
   renderPapers();
 }
 
@@ -243,6 +255,7 @@ function toggleAuthorFilter(author) {
   });
   
   // 重新渲染论文列表
+  resetDisplayedPaperLimit();
   renderPapers();
 }
 
@@ -660,6 +673,7 @@ function initEventListeners() {
       // 控制清除按钮显示
       searchClear.style.display = textSearchQuery.length > 0 ? 'inline-flex' : 'none';
 
+      resetDisplayedPaperLimit();
       renderPapers();
     };
 
@@ -684,6 +698,7 @@ function initEventListeners() {
       }
       previousActiveKeywords = null;
       previousActiveAuthors = null;
+      resetDisplayedPaperLimit();
       renderPapers();
       // 清空后隐藏输入框
       searchWrapper.style.display = 'none';
@@ -919,7 +934,8 @@ async function loadPapersByDate(date) {
       return;
     }
 
-    renderPapers();
+  resetDisplayedPaperLimit();
+  renderPapers();
   } catch (error) {
     console.error('加载论文数据失败:', error);
     container.innerHTML = `
@@ -1055,6 +1071,7 @@ function filterByCategory(category) {
     behavior: 'smooth'
   });
   
+  resetDisplayedPaperLimit();
   renderPapers();
 }
 
@@ -1329,6 +1346,7 @@ function renderPapers() {
   
   // 存储当前过滤后的论文列表，用于箭头键导航
   currentFilteredPapers = [...filteredPapers];
+  const visiblePapers = filteredPapers.slice(0, displayedPaperLimit);
   
   if (filteredPapers.length === 0) {
     container.innerHTML = `
@@ -1339,7 +1357,7 @@ function renderPapers() {
     return;
   }
   
-  filteredPapers.forEach((paper, index) => {
+  visiblePapers.forEach((paper, index) => {
     const paperCard = document.createElement('div');
     // 添加匹配高亮类
     paperCard.className = `paper-card ${paper.isMatched ? 'matched-paper' : ''}`;
@@ -1428,6 +1446,18 @@ function renderPapers() {
     
     container.appendChild(paperCard);
   });
+
+  if (visiblePapers.length < filteredPapers.length) {
+    const loadMoreContainer = document.createElement('div');
+    loadMoreContainer.className = 'load-more-container';
+    loadMoreContainer.innerHTML = `
+      <button id="loadMorePapers" class="load-more-button" type="button">
+        Load more (${filteredPapers.length - visiblePapers.length} remaining)
+      </button>
+    `;
+    loadMoreContainer.querySelector('#loadMorePapers').addEventListener('click', loadMorePapers);
+    container.appendChild(loadMoreContainer);
+  }
 }
 
 function showPaperDetails(paper, paperIndex) {
