@@ -30,8 +30,8 @@ from pathlib import Path
 CONFIG = {
     # ---------- 爬取哪段时间的论文（arXiv 提交日期，格式 "YYYY-MM-DD"）----------
     # 方式一：直接写死起止日期（含首尾两天）
-    "START_DATE": "2026-07-08",
-    "END_DATE":   "2026-07-09",
+    "START_DATE": "2026-07-09",
+    "END_DATE":   "2026-07-12",
     # 方式二：如果把 LAST_N_DAYS 设成一个整数（例如 1），
     #         就会忽略上面的起止日期，改为「最近 N 天（含今天）」。不用就保持 None。
     "LAST_N_DAYS": None,
