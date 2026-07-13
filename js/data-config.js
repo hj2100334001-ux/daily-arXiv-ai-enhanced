@@ -32,6 +32,7 @@ function detectGitHubPagesRepository() {
 }
 
 const detectedRepository = detectGitHubPagesRepository();
+const DATA_CACHE_VERSION = Date.now();
 
 const DATA_CONFIG = {
     /**
@@ -66,7 +67,7 @@ const DATA_CONFIG = {
      * @returns {string} Full URL to the data file
      */
     getDataUrl: function(filePath) {
-        return `${this.getDataBaseUrl()}/${filePath}`;
+        return `${this.getDataBaseUrl()}/${filePath}?cache=${DATA_CACHE_VERSION}`;
     }
 };
 
